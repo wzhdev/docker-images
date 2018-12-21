@@ -1,21 +1,18 @@
-FROM alpine
+FROM wzhdev/alpine
 
-RUN \
-    echo "http://mirrors.aliyun.com/alpine/v3.8/main" > /etc/apk/repositories && \
-    echo "http://mirrors.aliyun.com/alpine/v3.8/community" >> /etc/apk/repositories  && \
-    apk update upgrade && \
-    apk add --no-cache procps curl bash ca-certificates git && \
-    ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
-    echo "Asia/Shanghai" > /etc/timezone
+COPY ca.crt /usr/local/share/ca-certificates/ca.crt
 
-
-ENV KUBE_LATEST_VERSION="v1.13.0"
-ENV HELM_VERSION="v2.12.0"
+RUN apk add --no-cache ca-certificates && update-ca-certificates && \
+	rm -f /usr/local/share/ca-certificates/ca.crt
 
 ENV KUBECONFIG=/etc/kube.conf
 
 COPY config /etc/kube.conf
 COPY helm /usr/bin/helm
 COPY kubectl /usr/bin/kubectl
+
+RUN helm init --skip-refresh --client-only && helm repo remove stable && \
+	helm plugin install https://github.com/chartmuseum/helm-push && \
+	helm repo add --password 123456 --username admin wzhdev https://harbor.wzh/chartrepo/wzhdev
 
 CMD bash
