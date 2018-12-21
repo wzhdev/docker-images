@@ -1,4 +1,4 @@
-FROM wzhdev/alpine:bash
+FROM wzhdev/alpine:3.8-bash
 
 COPY ca.crt /usr/local/share/ca-certificates/ca.crt
 
