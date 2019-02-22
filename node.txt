@@ -1,0 +1,214 @@
+
+
+
+
+
+
+
+
+
+
+Command
+Event
+Entity
+View
+
+
+
+
+
+
+
+Object Load(OjbectId)
+void Save(Object)
+
+
+
+用户
+产品
+价格
+库存
+订单
+支付
+
+下单视图：产品详情、价格、库存
+
+下单命令：用户、产品、数量、单价
+
+订单生成事件：用户、产品、数量、单价
+订单生成结果通知：结果
+
+库存预扣事件：库存、数量
+库存预扣结果通知：结果
+
+支付命令：订单、金额
+
+
+
+应用场景 - 命令 - RequestResponse API
+领域模型 - 事件 - 
+
+
+命令网关
+
+命令处理函数
+
+事件处理函数
+
+Event - Compacate - Snapshut
+冷热数据分级
+
+
+
+load order o
+with user u
+on o.userId = u.id
+with product p
+on o.productId = p.id
+ with inventory i
+ on p.inventoryId = i.id
+
+
+o.order
+o.order.orderline
+
+u.user
+u.user.address
+
+
+查询视图
+提交命令
+
+
+
+
+事件处理平台：
+
+
+
+
+
+
+
+
+
+
+位置透明
+集群负载
+
+
+
+
+Entity:
+命令 Json
+行为 JavaScript 脚本
+事件 Json
+状态 Json
+
+
+
+数据处理和数据存储就近，移动业务逻辑（Actor 的行为 JavaScript脚本）
+
+Actor Shared 分配在 node上，调度到node上的Actor容器里
+
+Command网关：
+
+
+Actor容器
+
+Event存储
+
+MessageAgent 
+
+
+Protobuf定义Command、Event、Status
+JavaScript定义Behavior
+
+Hash桶地址缓存
+Hash桶分布调度
+
+
+Node：计算、网络、存储
+
+内存中缓存的Actor Status数，存储中保存的snapshot数，event日志长度，
+
+
+Actor Shared 分布在 Node上
+Actor Pool 分布在 Pod中
+
+存储与计算分离
+
+
+
+
+Timer触发
+
+广播关联表
+
+
+产品下架，关联的未支付订单失效
+
+
+
+Product:
+
+User:
+
+Order:
+
+Payment:
+
+
+use case:
+1、用户浏览产品列表
+
+2、用户查看产品详情
+
+3、用户下达
+
+4、用户查看订单列表
+
+5、用户查看订单详情
+
+6、用户支付订单
+
+7、用户查看支付结果
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
