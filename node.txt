@@ -185,6 +185,131 @@ use case:
 
 
 
+Actor
+B
+S
+M
+E
+
+
+SharedKey
+
+RootActorId
+
+
+User
+
+Product
+
+Order
+
+
+
+
+
+MessageBus
+
+User
+User-Address
+
+com.wzh.hello.User:10001
+com.wzh.hello.User:10001
+
+
+
+
+
+
+
+
+
+
+Command Gateway:
+外部系统提交Command
+
+
+
+
+
+
+Registry
+
+Scheduler
+
+Monitor
+
+Message Bus
+
+Event Bus
+
+Actor Cluster
+
+View  Cluster
+
+Api Gateway
+
+
+
+
+ApiGateway:
+ RequstAcotr
+ SessionActor
+
+
+
+
+UseCase1:SearchProduct
+
+Client > SearchProductRequest(SearchKeyWord) > ApiGateway 
+ > ProductSummaryView > ProductSummaryList > ProductListPage
+
+UseCase2:BrowseProduct
+GetProductDetailRequest(ProductId) > ApiGateway > ProductDetailView > ProductDetail > ProductDetailPage
+
+UseCase3:PlaseOrder
+PlaseOrderRequest(ProductId, UserId, Amount) > ApiGateway 
+> OrderActor > 
+OrderDetailQuery(OrderId) > OrderDetail > OrderDetailPage
+
+
+
+
+
+UseCase1:SearchProduct
+
+Client: SearchProductRequest(ProductKeyword)->ApiGateway
+ApiGateway: new SearchProductRequestActor
+ApiGateway: SearchProductRequest(ProductKeyword)->SearchProductRequestActor
+SearchProductRequestActor: SearchProductRequest(ProductKeyword) to SearchProductQuery(ProductKeyword)
+SearchProductRequestActor: SearchProductQuery(ProductKeyword)->ProductSummaryView
+ProductSummaryView: ProductSummaryList->SearchProductRequestActor
+SearchProductRequestActor: ProductSummaryList->Client
+SearchProductRequestActor: destroy
+
+UseCase2:BrowseProduct
+
+Client: GetProductDetailRequest(ProductId)->ApiGateway 
+ApiGateway: new GetProductDetailRequestActor
+ApiGeteway: GetProductDetailRequest(ProductId)->GetProductDetailRequestActor
+GetProductDetailRequestActor: GetProductDetailRequest(ProductId) to GetProductDetailQuery(ProductId)
+GetProductDetailRequestActor: GetProductDetailQuery(ProductId)->ProductDetailView
+ProductDetailView: ProductDetail->GetProductDetailRequestActor
+GetProductDetailRequestActor: ProductDetail->Client
+GetProductDetailRequestActor: destroy
+
+UseCase3:PlaceOrder
+Client: PlaceOrderRequest(ProductId, Amount)->ApiGateway
+ApiGateway: new PlaceOrderRequestActor
+ApiGateway: PlaceOrderRequest(ProductId, Amount) to PlaceOrderCommand(ProductId, Amount)
+PlaceOrderRequestActor: new OrderActor
+PlaceOrderRequestActor: PlaceOrderCommand(ProductId, Amount)->OrderActor
+OrderActor: PlaceOrderResult(OrderId)->PlaceOrderRequestActor
+PlaceOrderRequestActor: OrderDetailQuery(OrderId)->OrderDetailView
+OrderDetailView: OrderDetail->PlaceOrderRequestActor
+PlaceOrderRequestActor: OrderDetail->Client
+PlaceOrderRequestActor: destroy
+
+
 
 
 
