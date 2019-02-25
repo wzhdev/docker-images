@@ -389,6 +389,8 @@ View
 领域模型：
 Actor
 Index
+Value
+Enume
 
 
 
@@ -398,6 +400,7 @@ Index
 Request分解成send Query to View
 View 分解成send Query to 引用View
 View 最终分解成 send Query to Actor or Index
+Value 保存值对象
 
 
 View属于模型的无状态的虚拟视图
@@ -531,6 +534,8 @@ GetUserOrdersActor send messages[ Query(select id, status, productId where Order
 
 define：
 
+
+
 UserActor
 ProductActor
 OrderActor
@@ -538,6 +543,52 @@ UserOrderIndex
 ProductOrderIndex
 
 
+Value<Address>(String city, String country,String code)
+
+
+Enume<Gender>[man,woman]
+
+
+
+Actor<User>:
+	status:
+		{String userName,String email,Enume<Gender> gender,Date birthday,Ref<Value<Address>> Address}
+	
+	message: CreateUser{String userName,String email,Enume<Gender> gender,Date birthday,Value<Address> address}
+	behavior: 
+		check userName,email,birthday
+		if invalid
+			return message InvalidParam{String code, String message}
+		send message Insert{Value<Address> address} to Value<Address> and wait return
+		if InvalidAddress
+			return message InvalidParam{String code, String message}
+		else Ref<Value<Address>> 
+		apply Event<UserCreated>{String userName,String email,Enume<Gender> gender,Date birthday,Ref<Value<Address>> address}
+		update status
+		apply Index<UserName>.Add{String userName}
+		apply Index<UserEmail>.Add{String userName}
+		push events
+		
+	message: UpdateUser{userName,email,gender,birthday}
+	behavior:
+
+	message: UpdateEmail{String email)}
+	behavior: UpdateAddress{Value<Address> address}
+
+	
+	index:
+		Index<UserName>(String name)
+		Index<UserEmail>(String email)
+
+
+View<QueryUserByName>
+
+
+View<QueryUserByEmail>:
+	param: {String email}
+	select: Actor<User>(userName,email, value(address))
+	from: Actor<User> ref [Value<Address>]
+	where: email like Index<UserEmail>(email)
 
 
 
@@ -545,13 +596,18 @@ ProductOrderIndex
 
 
 
+一对多关系
+Order:
+
+Item-Product
 
 
+Value<OrderItem>{Ref<Actor<Product> product, Ref<Value<ProductSnapshoot>> productSnapshoot, Int amount, Int price, DateTime placeTime}
 
-
-
-
-
+Actor<Order>:
+	status:
+		{Ref<Actor<User>> user, DateTime placeTime, Int totalAmount,List<Value<OrderItem>> items}
+		
 
 
 
