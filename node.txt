@@ -112,11 +112,14 @@ Entity:
 Actor Shared 分配在 node上，调度到node上的Actor容器里
 
 Command网关：
+Query网关：
 
 
 Actor容器
 
 Event存储
+
+View存储
 
 MessageAgent 
 
@@ -148,6 +151,11 @@ Timer触发
 
 产品下架，关联的未支付订单失效
 
+
+
+冷数据脱离
+
+快照脱机归档
 
 
 Product:
@@ -308,6 +316,226 @@ PlaceOrderRequestActor: OrderDetailQuery(OrderId)->OrderDetailView
 OrderDetailView: OrderDetail->PlaceOrderRequestActor
 PlaceOrderRequestActor: OrderDetail->Client
 PlaceOrderRequestActor: destroy
+
+
+
+
+
+
+
+
+
+
+
+
+
+LVS
+
+
+
+ApiGateway Cluster：
+Dispatcher
+RequestActor
+SessionActor
+
+SearchProductActor:
+ message: SearchProductRequest
+ behavior: map SearchProductRequest to SearchProductQuery , send SearchProductQuery to ProductView
+
+ message: ProductList
+ behavior: return ProductList
+
+ state: SessionActor
+
+
+ProductActor
+
+
+
+
+
+
+
+ActorNode
+
+ActorRegion
+
+MessageBus
+
+
+
+
+
+
+ServiceActor
+
+EntityActor
+
+
+
+
+
+
+技术支撑：
+APIGateway
+RequestActor
+SessionActor
+
+应用场景：
+View
+Command
+View
+
+领域模型：
+Actor
+Index
+
+
+
+
+
+
+Request分解成send Query to View
+View 分解成send Query to 引用View
+View 最终分解成 send Query to Actor or Index
+
+
+View属于模型的无状态的虚拟视图
+Index描述模型中Actor直接的关联关系
+Actor保持状态数据组成领域模型
+在actor、view、index之间传递message，
+actor,view,index都是分片的，都连接message bus，位置透明
+
+APIGateway由RequestActor和SessionActor组成，转换http请求为message
+
+通过Index广播分组广播消息
+
+IP组播
+
+
+可本地尽量本地，可并行尽量并行
+
+
+
+
+
+OrderActor：处理命令
+
+
+OrderView
+
+OrderWithProductView
+
+UserOrderIndex: 处理1对多，多对多关联查询
+
+
+
+
+
+
+
+
+
+
+ViewIndex
+
+
+
+
+
+
+
+
+订单详情查询：
+订单ID orderId
+
+select *
+from order o
+join product p
+on o.productId = p.id
+where o.id = orderId
+
+
+
+Client send GET /app/order/ORDER10001 to ApiGatewayNode1
+
+ApiGatewayNode1 local new GetOrderActor and set SessionActorRef  #分发http请求到对应SessionActor所在节点上创建RequestActor
+
+ApiGatewayNode1 send message GetOrder(OrderId=ORDER10001) to GetOrderActor
+
+GetOrderActor send message GetUserId to SessionActor
+
+SessionActor send message UserId=USER111 to GetOrderActor
+
+GetOrderActor send message Query(select id, status, productId where OrderId=ORDER10001 and UserId=USER111) to OrderActor
+
+OrderActor send message Order(id=ORDER10001, status=Created, productId=PRODUCT501) to GetOrderActor
+or
+OrderActor send message OrderNotExists to GetOrderActor
+or
+OrderActor send message NotUserOrder to GetOrderActor
+
+GetOrderActor send messge Query(select productId, name, descript where ProductId=PRODUCT501) to ProductActor
+
+ProductActor send message Product(id=PRODUCT501, name=the product, descript=good product) to GetOrderActor
+
+ProductActor return Product(id=PRODUCT501, name=the product, descript=good product) to ApiGateway
+
+ApiGetway response Product(id=PRODUCT501, name=the product, descript=good product) to Client
+
+
+
+
+
+
+
+分页查询用户订单列表：
+用户ID userId
+select *
+from user u
+join order o
+on u.id = o.orderId
+join product p
+on o.productId = p.id
+where u.id = userId
+limit 10, 10
+
+
+
+Client send GET /app/user/orders?page=2&size=10 to ApiGatewayNode2
+
+ApiGatewayNode2 local new GetUserOrdersActor and set SessionActorRef  #分发http请求到对应SessionActor所在节点上创建RequestActor
+
+ApiGatewayNode2 send message GetUserOrders(page=2, size=10) to GetUserOrdersActor
+
+GetUserOrdersActor send message GetUserId to SessionActor
+
+SessionActor send message UserId=USER111 to GetUserOrdersActor
+
+GetUserOrdersActor send message Query(select orderId where userId=USER111 limit 10, 10) to UserOrderIndex
+
+UserOrderIndex send message[(orderId=ORDER10001),(orderId=1909),...] to GetUserOrdersActor
+
+GetUserOrdersActor send messages[ Query(select id, status, productId where OrderId=ORDER10001), ...] to OrderActor
+
+
+
+
+
+
+
+
+
+
+
+
+define：
+
+UserActor
+ProductActor
+OrderActor
+UserOrderIndex
+ProductOrderIndex
 
 
 
