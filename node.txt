@@ -667,9 +667,9 @@ AddressValue
 AddressValue{
 
 注册用户场景：
-Client POST /user/registry?RegistryUserRequest{String name, String password, String email, AddressValue address} TO ApiGateway
+Client POST /user/registry?{String name, String password, String email, AddressValue address} TO ApiGateway
 
-ApiGateway NEW RegistryUserRequestActor to processe the RegistryUserRequest
+ApiGateway NEW RegistryUserRequestActor to processe the request
 
 RegistryUserRequestActor NEW UserActor nad SEND NewUser{String name, String password, String email, AddressValue address} to the UserActor
 
@@ -713,9 +713,9 @@ RegistryUserRequestActor HANDLE UserCreatedDone
 
 ProductRankEnum[SalesNum, Hot, Price, Defaul]
 搜索产品场景：
-Client GET /product/search?SearchProductRequest{String keyword, Int pageNo, int pageSize, ProductRankEnum rank} TO ApiGateway
+Client GET /product/search?{String keyword, Int pageNo, int pageSize, ProductRankEnum rank} TO ApiGateway
 
-ApiGateway NEW SearchProductRequestActor to processe the SearchProductRequest
+ApiGateway NEW SearchProductRequestActor to processe the request
 
 SearchProductRequestActor SEND Query(keyword,pageNo,pageSize,rank) ON ProductView TO SearchEngineGateway
 
@@ -728,7 +728,7 @@ SearchProductRequestActor HANDLE Result(List<Product{String productId, String na
 浏览产品详情场景：
 Client GET /product/detail/PID001 TO ApiGateway
 
-ApiGateway NEW GetProductDetailRequestActor to processe the GetProductDetailRequest{String productId}
+ApiGateway NEW GetProductDetailRequestActor to processe the request
 
 GetProductDetailRequestActor FUNC Ref<ProductDetailView> ProductDetailView = productIdToProductView(productId)
 
@@ -739,7 +739,23 @@ ProductDetailView HANDLE Query:
  
 
 
+添加产品到购物车场景：
+Client POST /cart/item?{String productSnapshootId, Int count}
 
+ApiGateway NEW AddItemToCartRequestActor to process the request
+
+AddItemToCartRequestActor
+ IF IS Logined
+	GET Ref<UserActor> user
+	SEND 
+
+AddItemToCartRequestActor HANDLE 
+
+
+  
+
+下单场景：
+Client POST /
 
 
 
@@ -752,8 +768,11 @@ ProductDetailView HANDLE Query:
 EDAC
 
 Event Drive Actor Cluster Primitive:
-LOAD 加载Actor状态
-SAVE 保存Actor状态
+LOAD 加载Actor Status
+SAVE 保存Actor Status
+GET	 获取 Status
+SET  设置 Status
+IS   状态判断
 PUSH 推送Event到EventBus
 PULL 从EventBus拉去Event
 FUNC 执行函数
