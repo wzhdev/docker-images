@@ -563,10 +563,10 @@ Actor<User>:
 		if InvalidAddress
 			return message InvalidParam{String code, String message}
 		else Ref<Value<Address>> 
-		apply Event<UserCreated>{String userName,String email,Enume<Gender> gender,Date birthday,Ref<Value<Address>> address}
-		update status
-		apply Index<UserName>.Add{String userName}
-		apply Index<UserEmail>.Add{String userName}
+		apply Event<UserCreated>{String userName,String email,Enume<Gender> gender,Date birthday,Ref<Value<Address>> address} to status
+		gen Index<UserName>.Add{String userName}
+		gen Index<UserEmail>.Add{String userName}
+		
 		push events
 		
 	message: UpdateUser{userName,email,gender,birthday}
@@ -602,17 +602,192 @@ Order:
 Item-Product
 
 
-Value<OrderItem>{Ref<Actor<Product> product, Ref<Value<ProductSnapshoot>> productSnapshoot, Int amount, Int price, DateTime placeTime}
+Actor<OrderItem>{Ref<Actor<Product> product, Ref<Value<ProductSnapshoot>> productSnapshoot, Int amount, Int price, DateTime placeTime}
 
 Actor<Order>:
 	status:
-		{Ref<Actor<User>> user, DateTime placeTime, Int totalAmount,List<Value<OrderItem>> items}
+		{Ref<Actor<User>> user, DateTime placeTime, Int totalAmount,List<Actor<OrderItem>> items}
 		
 
 
+Index<OrderItem>(Ref<Actor<Order>> order,Ref<Actor<OrderItem>> orderItem)
 
 
 
+
+
+ApiGateway
+
+SearchEngineGateway
+
+BlockStoreEngineGateway
+
+
+
+
+Actor
+Value
+Index
+View
+
+Query 表达查询
+
+Event 表达消息
+
+Funcation
+
+Gateway
+Request
+Session
+
+
+Index表达关系
+View表达视图
+
+
+UserActor 1-----* OrderActor 1-----* OrderItemActor *-----1 ProductSnapshootValue *-------1 ProductActor
+
+*
+|
+|
+|
+1
+
+AddressValue
+
+
+
+
+
+
+
+
+
+
+AddressValue{
+
+注册用户场景：
+Client POST /user/registry?RegistryUserRequest{String name, String password, String email, AddressValue address} TO ApiGateway
+
+ApiGateway NEW RegistryUserRequestActor to processe the RegistryUserRequest
+
+RegistryUserRequestActor NEW UserActor nad SEND NewUser{String name, String password, String email, AddressValue address} to the UserActor
+
+ UserActor HANDLE NewUser:
+  CHECK name,password,email,address
+  SEND Insert{String name, Ref<UserActor> user} to UserNameIndex
+  SEND Insert{String email, Ref<UserActor> user} to UserEmailIndex
+  FUNC password=Md5(password)
+  STATUS WaitUserEmailIndexInsert OR WaitUserNameIndexInsert
+  STATUS {String name, String password, String email, AddressValue address}
+ 
+  UserNameIndex SEND Done Or Fail to UserActor
+ 	if Done
+ 		UserNameIndexInsertDone
+ 		if UserEmailIndexInsertDone
+ 			SAVE {String name, String password, String email, AddressValue address}
+			#LOAD {String name, String password, String email, AddressValue address}
+			PUSH UserCratedEvent
+			#PULL UserCreateEvent
+ 			SEND UserCreatedDone TO RegistryUserRequestActor
+ 	if Fail
+		SEND UserCreatedFail(message="name已注册")
+		SEND Delete{String email, Ref<UserActor> user} TO UserEmailIndex
+		DESTROY self
+ 
+  UserEmailIndex SEND Done Or Fail to UserActor
+ 	if Done
+ 		UserEmailIndexInsertDone
+ 		if UserNameIndexInsertDone
+ 			SAVE {String name, String password, String email, AddressValue address}
+			PUSH UserCratedEvent
+ 			SEND UserCreatedDone TO RegistryUserRequestActor
+ 	if Fail
+		SEND UserCreatedFail(message="email已注册")
+		SEND Delete{String name, Ref<UserActor> user} TO UserNameIndex
+		DESTROY self
+
+RegistryUserRequestActor HANDLE UserCreatedDone
+ RETURN RegistryUserResponse{Ref<UserActor> user} TO Client
+
+
+ProductRankEnum[SalesNum, Hot, Price, Defaul]
+搜索产品场景：
+Client GET /product/search?SearchProductRequest{String keyword, Int pageNo, int pageSize, ProductRankEnum rank} TO ApiGateway
+
+ApiGateway NEW SearchProductRequestActor to processe the SearchProductRequest
+
+SearchProductRequestActor SEND Query(keyword,pageNo,pageSize,rank) ON ProductView TO SearchEngineGateway
+
+SearchEngineGateway SEND Result(List<Product> products) TO SearchProductRequestActor
+
+SearchProductRequestActor HANDLE Result(List<Product{String productId, String name, String descrip, String price}> products)
+ RETURN  Result(List<Product> products) TO Client
+ 
+
+浏览产品详情场景：
+Client GET /product/detail/PID001 TO ApiGateway
+
+ApiGateway NEW GetProductDetailRequestActor to processe the GetProductDetailRequest{String productId}
+
+GetProductDetailRequestActor FUNC Ref<ProductDetailView> ProductDetailView = productIdToProductView(productId)
+
+GetProductDetailRequestActor SEND Query ON ProductDetailView
+
+ProductDetailView HANDLE Query:
+ LOAD ProductActor
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+EDAC
+
+Event Drive Actor Cluster Primitive:
+LOAD 加载Actor状态
+SAVE 保存Actor状态
+PUSH 推送Event到EventBus
+PULL 从EventBus拉去Event
+FUNC 执行函数
+
+HANDLE 处理Event
+DESTROY 销毁Actor
+
+Index.INSERT
+Index.DELETE
+Index.QUERY
+
+View.Query
+
+
+
+
+
+EventBus
+
+message packet
+
+UDP
+
+
+
+
+
+
+
+
+
+
+
+ID gen 算法
 
 
 
