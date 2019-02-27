@@ -811,6 +811,272 @@ ID gen 算法
 
 
 
+Gateway 网关
+
+
+Query 执行查询
+
+Actor 模型实体
+
+Event 触发动作
+
+Action 实体动作
+
+Relation 关系
+
+Restrict 限定
+
+Index 索引
+
+Value 值
+
+View 模型视图
+
+Func 功能函数
+
+StoreEngine 存储引擎
+
+SearchEngine 搜索引擎
+
+EventAgent 事件代理
+
+ActorContainer Actor容器
+
+
+
+
+
+
+
+操作原语：
+GET Value FROM Actor
+SET Value TO Actor
+
+SAVE Value TO Store
+LOAD Value FROM Store
+
+PUSH 
+PULL
+
+IS	Status 
+
+SEND Event TO Actor
+
+QUERY View FROM View
+
+
+
+
+
+
+
+
+
+
+下单场景：
+
+
+
+PlaceOrderAction-->OrderDetailQuery
+
+
+
+
+
+FUNC 脚本算子：
+IF
+FOR
+VAR
+MAP
+
+
+
+
+
+
+
+
+
+
+
+
+
+分片
+partition
+副本
+replication
+
+
+ID递增
+
+
+SchemeId-
+
+
+消息投递：
+
+
+数据的增删改查：
+
+
+
+Action<UserRegisry>:
+Action<UserLogin>:
+Action<UserLogout>:
+Action<UpdateUserInfo>:
+Action<AddAddress>:
+
+
+Value<Address>{String city, String country, String code}
+
+Actor<User>:
+	Status:
+		
+	Values:
+		String name
+		String email
+		List<Value<Address>> addresses
+	
+	Events:
+		NewUser
+		UpdateEmail
+		AddAddress
+		DeleteAddress
+		
+
+
+
+
+
+
+
+WAL:
+SendEventLog
+PushEventLog
+UpdateValueLog
+UpdateStatusLog
+Rollback
+Commit
+
+
+
+Actor<User>
+
+Actor<User>.Index<Name>{String name}
+Actor<User>.Index<Email>{String email}
+
+Actor<User>.Values{String name, String email,List<Value<Address> addresses,Value<Address> defaultAddress,List<Actor<Order> orders}
+Actor<User>.Status{}
+Actor<User>.Value<Address>{}
+Actor<User>.Event<>{}
+
+Actor<Order>
+
+Actor<User>.Relation.Actor<Order>
+
+
+Actor<User> 1---* Value<Address>
+Actor<User>.Index<Address>{address}
+
+
+ID:
+User Space:
+Actor<User>: A-User-User-UUID
+Actor<User>.Value<Address>: User-A-User-UUID-V-Address-UUID
+Actor<User>.Index<Name>: User-A-User-I-name-name value
+
+Actor<User.User>.Relation.Actor<Order.Order>: User-A-User-UUID-R-Order-A-Order-UUID
+
+Order Space:
+
+Actor<Order>{Actor<User.User> user,Int totalAmount, Actor<User.User>.Value<Address> address, List<Actor<OrderItem>> items}
+
+Actor<Order>: A-Order-Order-UUID
+
+Actor<Order>.Actor<OrderItem>{Actor<Product> product, Value<ProductSnap> productSnap, Actor<ProductSku> productSku, Int count, Int amount}
+
+Actor<Order>.Actor<OrderItem>:User-A-User-UUID-A-OrderIem-UUID
+
+Actor<Order>.Action<AddOrderItem>:
+	Input:{Actor<Product> product,Value<ProductSnapshoot> productSnap, Actor<ProductSku> productSku, Int count, Int amount}
+	Handle:
+		
+	Output:Done|Fail
+
+
+	
+	
+Order 1---* OrderItem
+
+Order 1---1(product) OrderItem
+
+Actor<Order>.Actor<OrderItem>:Order-A-Order-UUID-A-OrderItem-UUID
+
+Actor<Order>.Actor<OrderItem>.Restrict<Product>:Order-A-Order-UUID-A-OrderItem-UUID-Product-A-Product-Product-UUID
+
+
+Product Space:
+Actor<Product>:{String name, String brief, String description}
+
+Actor<Product>.Value<ProductSnap>:{
+
+Actor<Product>.Actor<ProductSku>:
+
+Actor<Product>.Value<ProductSnap>.Restrict<CurrSnap>
+
+
+
+
+采购系统补充库存：
+
+
+
+
+分片键：
+PK：
+
+KEY规则：
+头两字节：PKID，PKValue， PKValue决定最大分片数
+
+基于同一PK的ID
+
+
+
+
+Action与Actor绑定
+
+Event-->Actor-->Action-->Status\Values\Events
+
+Query-->View-->Actor\Index-->Result
+
+
+
+
+
+
+
+
+
+
+
+User
+Order
+共用同一个分片PK
+
+
+
+PartitionKey
+
+
+
+
+
+
+
+
+
+
+
 
 
 
